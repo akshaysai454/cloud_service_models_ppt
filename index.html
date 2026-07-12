@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Service Models: IaaS, PaaS, SaaS</title>
+    <meta name="description" content="Cloud Computing Foundations — IaaS, PaaS, SaaS presentation by CSE-F, MRDU">
+
+    <!-- Fonts: Playfair Display (serif headings) + Inter (body text) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           DESIGN SYSTEM — Anthropic/Claude Editorial
+           Warm cream, terracotta accent, serif + sans
+           =========================================== */
+        :root {
+            /* --- Palette --- */
+            --bg-page: #F0EDE4;
+            --bg-card: #F7F5EF;
+            --bg-card-hover: #F2EFE8;
+            --border-frame: #C8C3B8;
+            --border-light: #DDD9CF;
+
+            --accent: #C46B4D;
+            --accent-light: rgba(196, 107, 77, 0.15);
+            --accent-underline: rgba(196, 107, 77, 0.25);
+
+            --text-primary: #1A1A1A;
+            --text-secondary: #3D3B38;
+            --text-muted: #8A857E;
+
+            --iaas-color: #C46B4D;
+            --paas-color: #C46B4D;
+            --saas-color: #C46B4D;
+
+            /* --- Typography --- */
+            --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+            --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
+            --font-mono: 'Inter', -apple-system, system-ui, sans-serif;
+
+            /* --- Sizing (at 1920×1080) --- */
+            --title-size: 88px;
+            --heading-size: 60px;
+            --subheading-size: 38px;
+            --body-size: 24px;
+            --label-size: 14px;
+            --small-size: 13px;
+
+            /* --- Spacing --- */
+            --slide-padding: 100px;
+            --frame-inset: 40px;
+
+            /* --- Animation --- */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-gentle: cubic-bezier(0.25, 0.1, 0.25, 1);
+            --duration: 0.7s;
+
+            /* --- Stage --- */
+            --stage-bg: #E8E5DC;
+            --slide-bg: var(--bg-page);
+        }
+
+        /* ===========================================
+           BASE RESET
+           =========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ===========================================
+           VIEWPORT BASE (mandatory 16:9 fixed stage)
+           =========================================== */
+        html, body {
+            width: 100%; height: 100%; margin: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+        }
+
+        .deck-viewport {
+            position: fixed; inset: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+        }
+
+        .deck-stage {
+            position: absolute; left: 0; top: 0;
+            width: 1920px; height: 1080px;
+            overflow: hidden; transform-origin: 0 0;
+            background: var(--slide-bg);
+        }
+
+        .slide {
+            position: absolute; inset: 0;
+            width: 1920px; height: 1080px;
+            overflow: hidden; display: block;
+            visibility: hidden; opacity: 0;
+            pointer-events: none;
+            background: var(--slide-bg);
+            transform: scale(1.02);
+            transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                        transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 1;
+        }
+
+        .slide.active, .slide.visible {
+            visibility: visible; opacity: 1;
+            pointer-events: auto; z-index: 3;
+            transform: scale(1);
+        }
+
+        .slide.leaving {
+            visibility: visible; opacity: 1;
+            pointer-events: none; z-index: 2;
+            transform: scale(0.985);
+            transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; }
+            .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+            .slide:last-child { break-after: auto; }
+            .side-nav, .progress-bar, .edit-hotzone, .edit-toggle { display: none !important; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.15s !important;
+            }
+        }
+
+        /* ===========================================
+           SLIDE FRAME — thin border around content
+           =========================================== */
+        .slide-frame {
+            position: absolute;
+            inset: var(--frame-inset);
+            border: 1px solid var(--border-frame);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .slide-inner {
+            flex: 1;
+            padding: 64px 80px 48px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .slide-inner.centered {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        /* ===========================================
+           COMPONENT 1: Badge Icon
+           Small rounded square, terracotta, letter
+           =========================================== */
+        .badge-icon {
+            width: 48px; height: 48px;
+            background: var(--accent);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-serif);
+            font-size: 24px; font-weight: 600;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .badge-icon.small {
+            width: 36px; height: 36px;
+            border-radius: 8px; font-size: 18px;
+        }
+
+        /* ===========================================
+           COMPONENT 2: Eyebrow Label
+           Uppercase, letter-spaced, terracotta, small
+           =========================================== */
+        .eyebrow {
+            font-family: var(--font-sans);
+            font-size: var(--label-size);
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        /* ===========================================
+           COMPONENT 3: Serif Headline
+           Big serif with italic accent word
+           =========================================== */
+        .headline {
+            font-family: var(--font-serif);
+            font-size: var(--heading-size);
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.15;
+            letter-spacing: -0.01em;
+        }
+
+        .headline.large {
+            font-size: var(--title-size);
+        }
+
+        .headline .accent-word {
+            font-style: italic;
+            color: var(--accent);
+            position: relative;
+            display: inline-block;
+        }
+
+        .headline .accent-word::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; bottom: 2px;
+            height: 3px;
+            background: var(--accent-underline);
+            border-radius: 2px;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.8s var(--ease-out-expo);
+        }
+
+        .slide.visible .headline .accent-word::after {
+            transform: scaleX(1);
+        }
+
+        /* ===========================================
+           COMPONENT 4: Subtitle / Body
+           =========================================== */
+        .subtitle {
+            font-family: var(--font-sans);
+            font-size: 24px;
+            font-weight: 500;
+            font-style: italic;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 700px;
+        }
+
+        .body-text {
+            font-family: var(--font-sans);
+            font-size: calc(var(--body-size) + 2px);
+            font-weight: 500;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        /* ===========================================
+           COMPONENT 5: Numbered Cards
+           01/02/03 italic serif terracotta
+           =========================================== */
+        .numbered-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .numbered-cards.four-col {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .num-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 40px 34px 36px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: background 0.3s var(--ease-gentle);
+        }
+
+        .num-card:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .num-card .num {
+            font-family: var(--font-serif);
+            font-style: italic;
+            font-size: 46px;
+            font-weight: 600;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .num-card .card-title {
+            font-family: var(--font-sans);
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+
+        .num-card .card-desc {
+            font-family: var(--font-sans);
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ===========================================
+           COMPONENT 6: Bottom Metadata Bar
+           =========================================== */
+        .metadata-bar {
+            position: absolute;
+            bottom: 16px; left: 32px;
+            font-family: var(--font-sans);
+            font-size: var(--small-size);
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .metadata-bar .dot {
+            width: 3px; height: 3px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        /* ===========================================
+           COMPONENT 7: Side Nav Dots
+           =========================================== */
+        .side-nav {
+            position: fixed;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .side-nav .nav-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--border-frame);
+            transition: all 0.3s var(--ease-gentle);
+            cursor: pointer;
+            border: none;
+            padding: 0;
+        }
+
+        .side-nav .nav-dot.active {
+            background: var(--accent);
+            transform: scale(1.25);
+        }
+
+        .side-nav .nav-dot:hover {
+            background: var(--accent);
+            opacity: 0.7;
+        }
+
+        /* ===========================================
+           COMPONENT 8: Presenter Tag (subtle)
+           =========================================== */
+        .presenter-tag {
+            position: absolute;
+            top: 16px; right: 32px;
+            font-family: var(--font-sans);
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        .presenter-tag .tag-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.5;
+        }
+
+        /* ===========================================
+           COMPONENT 9: Slide Counter
+           =========================================== */
+        .slide-counter {
+            position: absolute;
+            bottom: 16px; right: 32px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        /* ===========================================
+           ANIMATIONS — subtle, editorial
+           =========================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity var(--duration) var(--ease-out-expo),
+                        transform var(--duration) var(--ease-out-expo);
+        }
+
+        .reveal-fade {
+            opacity: 0;
+            transition: opacity var(--duration) var(--ease-gentle);
+        }
+
+        .reveal-left {
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: opacity var(--duration) var(--ease-out-expo),
+                        transform var(--duration) var(--ease-out-expo);
+        }
+
+        .slide.visible .reveal,
+        .slide.visible .reveal-fade,
+        .slide.visible .reveal-left {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* Stagger */
+        .reveal:nth-child(1), .reveal-left:nth-child(1) { transition-delay: 0.05s; }
+        .reveal:nth-child(2), .reveal-left:nth-child(2) { transition-delay: 0.15s; }
+        .reveal:nth-child(3), .reveal-left:nth-child(3) { transition-delay: 0.25s; }
+        .reveal:nth-child(4), .reveal-left:nth-child(4) { transition-delay: 0.35s; }
+        .reveal:nth-child(5), .reveal-left:nth-child(5) { transition-delay: 0.45s; }
+        .reveal:nth-child(6), .reveal-left:nth-child(6) { transition-delay: 0.55s; }
+        .reveal:nth-child(7), .reveal-left:nth-child(7) { transition-delay: 0.65s; }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes drawUnderline {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        /* ===========================================
+           LAYOUT HELPERS
+           =========================================== */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            flex: 1;
+            align-items: start;
+        }
+
+        .two-col.v-center { align-items: center; }
+
+        .spacer { flex: 1; }
+
+        .gap-sm { gap: 16px; }
+        .gap-md { gap: 24px; }
+        .gap-lg { gap: 40px; }
+
+        .mt-sm { margin-top: 16px; }
+        .mt-md { margin-top: 28px; }
+        .mt-lg { margin-top: 48px; }
+
+        /* ===========================================
+           CONTRAST TABLE (slide 3)
+           =========================================== */
+        .contrast-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .contrast-table th, .contrast-table td {
+            padding: 24px 28px;
+            text-align: left;
+            font-family: var(--font-sans);
+            font-size: 23px;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .contrast-table th {
+            background: var(--bg-card);
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 19px;
+        }
+
+        .contrast-table th:first-child {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .contrast-table td {
+            color: var(--text-secondary);
+        }
+
+        .contrast-table td:first-child {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent);
+            font-weight: 600;
+            background: rgba(196,107,77,0.03);
+        }
+
+        .contrast-table td.highlight {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .contrast-table tr:last-child td { border-bottom: none; }
+
+        /* ===========================================
+           LAYERED STACK DIAGRAM (slide 4)
+           =========================================== */
+        .stack-cols {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            flex: 1;
+            align-items: end;
+        }
+
+        .stack-col {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .stack-col-label {
+            font-family: var(--font-serif);
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .stack-col-label.accent { color: var(--accent); font-style: italic; }
+
+        .stack-block {
+            height: 58px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .stack-block.customer {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            color: var(--text-secondary);
+        }
+
+        .stack-block.provider {
+            background: var(--accent);
+            color: #fff;
+            border: 1px solid var(--accent);
+        }
+
+        .stack-legend {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 16px;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .stack-legend-item {
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .stack-legend-swatch {
+            width: 14px; height: 14px; border-radius: 4px;
+        }
+
+        .slide.visible .stack-block {
+            animation: fadeSlideUp 0.4s var(--ease-out-expo) both;
+        }
+
+        /* ===========================================
+           RESPONSIBILITY SPLIT (slides 7, 11)
+           =========================================== */
+        .resp-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            flex: 1;
+        }
+
+        .resp-col { display: flex; flex-direction: column; gap: 10px; }
+
+        .resp-col-header {
+            font-family: var(--font-sans);
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 14px 20px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .resp-col-header.provider {
+            background: rgba(196,107,77,0.08);
+            color: var(--accent);
+            border: 1px solid rgba(196,107,77,0.15);
+        }
+
+        .resp-col-header.customer {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-light);
+        }
+
+        .resp-row {
+            padding: 18px 20px;
+            border-radius: 10px;
+            font-family: var(--font-sans);
+            font-size: 21px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .resp-row.provider {
+            background: rgba(196,107,77,0.05);
+            border: 1px solid rgba(196,107,77,0.12);
+            color: var(--accent);
+        }
+
+        .resp-row.customer {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .resp-row .row-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .resp-row.provider .row-icon { background: rgba(196,107,77,0.12); }
+        .resp-row.customer .row-icon { background: var(--border-light); }
+
+        /* ===========================================
+           EXAMPLE CARDS (slides 8, 12, 15)
+           =========================================== */
+        .example-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            flex: 1;
+            align-items: center;
+        }
+
+        .example-cards.four-col { grid-template-columns: repeat(4, 1fr); }
+
+        .ex-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            padding: 40px 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 18px;
+            transition: all 0.3s var(--ease-gentle);
+        }
+
+        .ex-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .ex-card .ex-icon {
+            width: 64px; height: 64px;
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent);
+        }
+
+        .ex-card .ex-name {
+            font-family: var(--font-sans);
+            font-size: 23px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .ex-card .ex-desc {
+            font-family: var(--font-sans);
+            font-size: 17px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* ===========================================
+           USE CASE LAYOUT (slides 9, 13)
+           =========================================== */
+        .use-case-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            flex: 1;
+            align-items: center;
+        }
+
+        .use-case-points {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .use-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .use-point .point-num {
+            font-family: var(--font-serif);
+            font-style: italic;
+            font-size: 28px;
+            color: var(--accent);
+            line-height: 1;
+            flex-shrink: 0;
+            padding-top: 2px;
+        }
+
+        .use-point .point-text {
+            font-family: var(--font-sans);
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .use-point .point-text strong {
+            color: var(--text-primary);
+            font-weight: 800;
+        }
+
+        .use-case-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .use-case-illustration {
+            width: 340px; height: 340px;
+            border-radius: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ===========================================
+           BENTO COMPARISON (slide 16)
+           =========================================== */
+        .bento {
+            display: grid;
+            grid-template-columns: 160px repeat(3, 1fr);
+            gap: 6px;
+            flex: 1;
+            align-content: center;
+        }
+
+        .bento-head {
+            padding: 20px 16px;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            font-family: var(--font-serif);
+            font-size: 22px;
+            font-weight: 600;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center;
+        }
+
+        .bento-label {
+            padding: 14px 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            font-weight: 500;
+            display: flex; align-items: center;
+            background: rgba(196,107,77,0.03);
+            border-radius: 8px;
+        }
+
+        .bento-cell {
+            padding: 16px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex; align-items: center;
+            line-height: 1.4;
+        }
+
+        .bento-cell.strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        /* ===========================================
+           RESPONSIBILITY MATRIX (slide 17)
+           =========================================== */
+        .matrix-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .matrix-row {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .matrix-label {
+            font-family: var(--font-serif);
+            font-style: italic;
+            font-size: 20px;
+            color: var(--accent);
+            text-align: right;
+        }
+
+        .matrix-bar-wrap {
+            height: 56px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            border: 1px solid var(--border-light);
+            background: var(--bg-card);
+        }
+
+        .matrix-seg {
+            height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 600;
+            transition: width 1s var(--ease-out-expo);
+        }
+
+        .matrix-seg .seg-inner {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 1px;
+            white-space: nowrap;
+        }
+
+        .matrix-seg .seg-pct {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .matrix-seg .seg-who {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .matrix-seg.provider-seg {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .matrix-seg.customer-seg {
+            background: var(--border-frame);
+            color: var(--text-primary);
+        }
+
+        .matrix-legend {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 8px;
+        }
+
+        .matrix-legend-item {
+            display: flex; align-items: center; gap: 8px;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .matrix-legend-swatch {
+            width: 16px; height: 16px; border-radius: 4px;
+        }
+
+        .matrix-footnote {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            letter-spacing: 0.3px;
+            margin-top: 4px;
+        }
+
+        /* ===========================================
+           DEFINITION BLOCK
+           =========================================== */
+        .def-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-left: 4px solid var(--accent);
+            border-radius: 0 12px 12px 0;
+            padding: 36px 44px;
+        }
+
+        .def-block p {
+            font-family: var(--font-sans);
+            font-size: 29px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.55;
+            font-weight: 400;
+        }
+
+        .def-block p strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* ===========================================
+           DECISION TREE SVG STYLING
+           =========================================== */
+        .decision-svg text { font-family: var(--font-serif); }
+        .decision-svg .label-sans { font-family: var(--font-sans); }
+
+        /* ===========================================
+           INLINE EDITING
+           =========================================== */
+        .edit-hotzone { position: fixed; top: 0; left: 0; width: 80px; height: 80px; z-index: 10000; cursor: pointer; }
+        .edit-toggle {
+            position: fixed; top: 16px; left: 16px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10001;
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: 8px; padding: 8px 14px;
+            font-size: 18px; cursor: pointer; color: var(--text-primary);
+        }
+        .edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
+
+        /* Progress bar */
+        .progress-bar {
+            position: fixed; bottom: 0; left: 0; height: 2px;
+            background: var(--accent);
+            transition: width 0.4s var(--ease-gentle);
+            z-index: 1001; opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- ===== SLIDE 1: TITLE ===== -->
+            <section class="slide active visible" id="slide-1">
+                <div class="slide-frame">
+                    <div class="slide-inner centered">
+                        <h1 class="headline large reveal" style="max-width:1400px;">
+                            Cloud Service Models:<br>
+                            <span class="accent-word">IaaS, PaaS, SaaS.</span>
+                        </h1>
+                        <p class="subtitle reveal" style="margin-top:24px; text-align:center; max-width:600px;">
+                            Understanding who manages what — and why it matters for every architect.
+                        </p>
+                        <div style="display:flex; align-items:center; gap:20px; margin-top:48px;" class="reveal">
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+                                <div style="font-family:var(--font-sans); font-size:15px; color:var(--text-secondary); letter-spacing:0.5px;">Cloud Cyber Security · Malla Reddy Deemed University · CSE-F</div>
+                                <div style="display:flex; gap:40px; font-family:var(--font-sans); font-size:14px; color:var(--text-muted); font-weight:700;">
+                                    <span><span style="font-family:var(--font-mono); font-size:12px; opacity:0.7; font-weight:400;">0451</span> &nbsp;A. Uma Sai Manikanta</span>
+                                    <span><span style="font-family:var(--font-mono); font-size:12px; opacity:0.7; font-weight:400;">0452</span> &nbsp;A. Harsha Vardhan</span>
+                                    <span><span style="font-family:var(--font-mono); font-size:12px; opacity:0.7; font-weight:400;">0453</span> &nbsp;A. Pranay</span>
+                                    <span><span style="font-family:var(--font-mono); font-size:12px; opacity:0.7; font-weight:400;">0454</span> &nbsp;Akshay Sai Lowsarwar</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">01 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 2: WHAT IS A CLOUD SERVICE MODEL ===== -->
+            <section class="slide" id="slide-2">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 1 · Acharapu</div>
+                        <div class="eyebrow reveal">What We're Covering</div>
+                        <h2 class="headline reveal">
+                            A way to classify clouds<br>by <span class="accent-word">responsibility.</span>
+                        </h2>
+                        <div class="numbered-cards mt-lg" style="max-width:1600px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                            <div class="num-card reveal">
+                                <div class="num">01</div>
+                                <div class="card-title">Definition</div>
+                                <div class="card-desc">A cloud service model classifies services by what the provider manages versus what you manage.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">02</div>
+                                <div class="card-title">Why It Matters</div>
+                                <div class="card-desc">It determines your flexibility, cost structure, and how much operational work lands on your team.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">03</div>
+                                <div class="card-title">The Trade-off</div>
+                                <div class="card-desc">More provider control means less work for you — but also less customization and flexibility.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">04</div>
+                                <div class="card-title">Real-World Impact</div>
+                                <div class="card-desc">A startup using SaaS moves fast with zero infrastructure overhead. A large enterprise using IaaS retains complete control for compliance. A developer team using PaaS ships code in days instead of weeks managing servers.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">02 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 3: ON-PREMISE VS CLOUD ===== -->
+            <section class="slide" id="slide-3">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 1 · Acharapu</div>
+                        <div class="eyebrow reveal">The Baseline</div>
+                        <h2 class="headline reveal" style="margin-bottom:32px;">
+                            On-premise vs <span class="accent-word">cloud.</span>
+                        </h2>
+                        <table class="contrast-table reveal" style="flex:0;">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>On-Premise</th>
+                                    <th>Cloud</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Hardware</td><td>You buy & maintain</td><td class="highlight">Provider owns it</td></tr>
+                                <tr><td>Cost</td><td>Large upfront CapEx</td><td class="highlight">Pay-as-you-go OpEx</td></tr>
+                                <tr><td>Scaling</td><td>Weeks — order hardware</td><td class="highlight">Minutes — click or API</td></tr>
+                                <tr><td>Security</td><td>Fully your responsibility</td><td class="highlight">Shared responsibility</td></tr>
+                                <tr><td>Uptime</td><td>Depends on your infra</td><td class="highlight">99.9%+ SLA guarantees</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">03 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 4: THE LAYERED STACK ===== -->
+            <section class="slide" id="slide-4">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 1 · Acharapu</div>
+                        <div class="eyebrow reveal">The Stack</div>
+                        <h2 class="headline reveal" style="font-size:48px; margin-bottom:8px;">
+                            Increasing <span class="accent-word">abstraction.</span>
+                        </h2>
+                        <p class="body-text reveal" style="font-size:22px; margin-bottom:32px; max-width:900px; line-height:1.6; color:var(--text-secondary);">
+                            <strong>The Shared Responsibility Model:</strong> As you move from On-Premise to SaaS, you trade granular control for reduced operational overhead. IaaS abstracts the hardware, PaaS abstracts the runtime, and SaaS abstracts the entire stack.
+                        </p>
+                        <p class="body-text reveal" style="font-size:16px; margin-bottom:24px; opacity:0.8;">Provider manages more as you move right →</p>
+                        <div class="stack-cols" style="position:relative;">
+                            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:120px; font-weight:800; color:var(--text-primary); opacity:0.04; white-space:nowrap; pointer-events:none; z-index:0; font-family:var(--font-sans);">TEAM CSE-F MRDU</div>
+                            <!-- On-Prem -->
+                            <div class="stack-col">
+                                <div class="stack-col-label">On-Prem</div>
+                                <div class="stack-block customer" style="animation-delay:0.50s;">Applications</div>
+                                <div class="stack-block customer" style="animation-delay:0.44s;">Data</div>
+                                <div class="stack-block customer" style="animation-delay:0.38s;">Runtime</div>
+                                <div class="stack-block customer" style="animation-delay:0.32s;">Middleware</div>
+                                <div class="stack-block customer" style="animation-delay:0.26s;">OS</div>
+                                <div class="stack-block customer" style="animation-delay:0.20s;">Virtualization</div>
+                                <div class="stack-block customer" style="animation-delay:0.14s;">Servers / Storage / Network</div>
+                            </div>
+                            <!-- IaaS -->
+                            <div class="stack-col">
+                                <div class="stack-col-label accent">IaaS</div>
+                                <div class="stack-block customer" style="animation-delay:0.70s;">Applications</div>
+                                <div class="stack-block customer" style="animation-delay:0.64s;">Data</div>
+                                <div class="stack-block customer" style="animation-delay:0.58s;">Runtime</div>
+                                <div class="stack-block customer" style="animation-delay:0.52s;">Middleware</div>
+                                <div class="stack-block customer" style="animation-delay:0.46s;">OS</div>
+                                <div class="stack-block provider" style="animation-delay:0.40s;">Virtualization</div>
+                                <div class="stack-block provider" style="animation-delay:0.34s;">Servers / Storage / Net</div>
+                            </div>
+                            <!-- PaaS -->
+                            <div class="stack-col">
+                                <div class="stack-col-label accent">PaaS</div>
+                                <div class="stack-block customer" style="animation-delay:0.90s;">Applications</div>
+                                <div class="stack-block customer" style="animation-delay:0.84s;">Data</div>
+                                <div class="stack-block provider" style="animation-delay:0.78s;">Runtime</div>
+                                <div class="stack-block provider" style="animation-delay:0.72s;">Middleware</div>
+                                <div class="stack-block provider" style="animation-delay:0.66s;">OS</div>
+                                <div class="stack-block provider" style="animation-delay:0.60s;">Virtualization</div>
+                                <div class="stack-block provider" style="animation-delay:0.54s;">Servers / Storage / Net</div>
+                            </div>
+                            <!-- SaaS -->
+                            <div class="stack-col">
+                                <div class="stack-col-label accent">SaaS</div>
+                                <div class="stack-block provider" style="animation-delay:1.10s;">Applications</div>
+                                <div class="stack-block provider" style="animation-delay:1.04s;">Data</div>
+                                <div class="stack-block provider" style="animation-delay:0.98s;">Runtime</div>
+                                <div class="stack-block provider" style="animation-delay:0.92s;">Middleware</div>
+                                <div class="stack-block provider" style="animation-delay:0.86s;">OS</div>
+                                <div class="stack-block provider" style="animation-delay:0.80s;">Virtualization</div>
+                                <div class="stack-block provider" style="animation-delay:0.74s;">Servers / Storage / Net</div>
+                            </div>
+                        </div>
+                        <div class="stack-legend reveal">
+                            <div class="stack-legend-item"><div class="stack-legend-swatch" style="background:var(--bg-card); border:1px solid var(--border-light);"></div> You manage</div>
+                            <div class="stack-legend-item"><div class="stack-legend-swatch" style="background:var(--accent);"></div> Provider manages</div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">04 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 5: WHY THIS MATTERS ===== -->
+            <section class="slide" id="slide-5">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 1 · Acharapu</div>
+                        <div class="eyebrow reveal">Choosing a Model</div>
+                        <h2 class="headline reveal" style="margin-bottom:24px;">
+                            How businesses <span class="accent-word">decide.</span>
+                        </h2>
+                        <p class="body-text reveal" style="font-size:18px; margin-bottom:28px; max-width:950px; line-height:1.7;">
+                            Choosing the right cloud service model depends on your team's priorities. <strong>Do you need complete control? Rapid deployment? Maximum simplicity?</strong> Each model answers a different question. Most enterprises use all three: IaaS for infrastructure-heavy workloads, PaaS for developer productivity, and SaaS for productivity tools. Below is the decision tree your organization likely uses.
+                        </p>
+                        <div class="numbered-cards">
+                            <div class="num-card reveal" style="border-top:3px solid var(--accent);">
+                                <div class="num">01</div>
+                                <div class="card-title">Need full control?</div>
+                                <div class="card-desc"><strong>Choose IaaS.</strong> Custom OS, runtimes, network rules, databases. You build from raw infrastructure up. Best for startups, compliance-heavy orgs, and teams with deep DevOps expertise who need to optimize every layer.</div>
+                            </div>
+                            <div class="num-card reveal" style="border-top:3px solid var(--accent);">
+                                <div class="num">02</div>
+                                <div class="card-title">Just ship code?</div>
+                                <div class="card-desc"><strong>Choose PaaS.</strong> Deploy apps without managing servers, databases, or OS patches. The platform handles scaling, monitoring, and infrastructure. Ideal for dev teams that want speed without infrastructure headaches.</div>
+                            </div>
+                            <div class="num-card reveal" style="border-top:3px solid var(--accent);">
+                                <div class="num">03</div>
+                                <div class="card-title">Ready-to-use software?</div>
+                                <div class="card-desc"><strong>Choose SaaS.</strong> Open a browser and start working. No installation, no maintenance, no patching. Perfect for end-users, small teams, and organizations that want the lowest operational burden.</div>
+                            </div>
+                        </div>
+                        <div class="mt-lg reveal" style="display:flex; justify-content:center;">
+                            <svg class="decision-svg" width="700" height="200" viewBox="0 0 700 200">
+                                <circle cx="350" cy="40" r="32" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.4"/>
+                                <text x="350" y="44" text-anchor="middle" fill="var(--text-primary)" font-size="14" font-weight="600">Your Need</text>
+                                <line x1="280" y1="65" x2="140" y2="140" stroke="var(--border-frame)" stroke-width="1"/>
+                                <line x1="350" y1="72" x2="350" y2="140" stroke="var(--border-frame)" stroke-width="1"/>
+                                <line x1="420" y1="65" x2="560" y2="140" stroke="var(--border-frame)" stroke-width="1"/>
+                                <circle cx="140" cy="160" r="28" fill="rgba(196,107,77,0.08)" stroke="var(--accent)" stroke-width="1.5"/>
+                                <text x="140" y="164" text-anchor="middle" fill="var(--accent)" font-size="16" font-style="italic" font-weight="600">IaaS</text>
+                                <circle cx="350" cy="160" r="28" fill="rgba(196,107,77,0.08)" stroke="var(--accent)" stroke-width="1.5"/>
+                                <text x="350" y="164" text-anchor="middle" fill="var(--accent)" font-size="16" font-style="italic" font-weight="600">PaaS</text>
+                                <circle cx="560" cy="160" r="28" fill="rgba(196,107,77,0.08)" stroke="var(--accent)" stroke-width="1.5"/>
+                                <text x="560" y="164" text-anchor="middle" fill="var(--accent)" font-size="16" font-style="italic" font-weight="600">SaaS</text>
+                                <text x="140" y="200" text-anchor="middle" fill="var(--text-muted)" font-size="12" class="label-sans">Max control</text>
+                                <text x="350" y="200" text-anchor="middle" fill="var(--text-muted)" font-size="12" class="label-sans">Dev speed</text>
+                                <text x="560" y="200" text-anchor="middle" fill="var(--text-muted)" font-size="12" class="label-sans">Ease of use</text>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">05 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 6: IaaS DEFINITION ===== -->
+            <section class="slide" id="slide-6">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 2 · Aggu</div>
+                        <div class="eyebrow reveal">Infrastructure as a Service</div>
+                        <h2 class="headline large reveal">
+                            <span class="accent-word">IaaS.</span>
+                        </h2>
+                        <div class="def-block reveal mt-md" style="max-width:1300px;">
+                            <p>Rent virtualized computing resources — <strong>servers, storage, and networking</strong> — on demand, over the internet. You manage everything above the hardware.</p>
+                        </div>
+                        <div class="numbered-cards mt-lg">
+                            <div class="num-card reveal">
+                                <div class="num">01</div>
+                                <div class="card-title">Raw building blocks</div>
+                                <div class="card-desc">Virtual machines, disks, and networks ready for you to configure.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">02</div>
+                                <div class="card-title">Scale in minutes</div>
+                                <div class="card-desc">Spin up or tear down instances with a click or an API call.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">03</div>
+                                <div class="card-title">Pay for what you use</div>
+                                <div class="card-desc">No upfront hardware cost. Per-second or per-hour billing.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">06 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 7: IaaS — WHO MANAGES WHAT ===== -->
+            <section class="slide" id="slide-7">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 2 · Aggu</div>
+                        <div class="eyebrow reveal">IaaS Responsibilities</div>
+                        <h2 class="headline reveal" style="font-size:44px; margin-bottom:28px;">
+                            Who manages <span class="accent-word">what?</span>
+                        </h2>
+                        <div class="resp-split">
+                            <div class="resp-col">
+                                <div class="resp-col-header provider reveal">Provider Manages</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg></div>Physical Servers</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>Storage Systems</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>Networking</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="12" x2="20" y2="12"/></svg></div>Virtualization</div>
+                            </div>
+                            <div class="resp-col">
+                                <div class="resp-col-header customer reveal">You Manage</div>
+                                <div class="resp-row customer reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div>Operating System</div>
+                                <div class="resp-row customer reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>Runtime & Middleware</div>
+                                <div class="resp-row customer reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg></div>Applications</div>
+                                <div class="resp-row customer reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>Data</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">07 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 8: IaaS EXAMPLES ===== -->
+            <section class="slide" id="slide-8">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 2 · Aggu</div>
+                        <div class="eyebrow reveal">Real-World IaaS</div>
+                        <h2 class="headline reveal" style="margin-bottom:24px;">
+                            Three providers, one <span class="accent-word">model.</span>
+                        </h2>
+                        <p class="body-text reveal" style="font-size:18px; margin-bottom:32px; max-width:950px; line-height:1.7;">
+                            IaaS is offered by the major cloud providers, each with different strengths. <strong>AWS EC2</strong> dominates market share and offers the broadest feature set. <strong>Google Compute Engine</strong> is known for superior networking and per-second billing. <strong>Azure</strong> integrates seamlessly with Microsoft enterprise software like Active Directory. All three provide bare-metal control — you choose your OS, runtime, and applications.
+                        </p>
+                        <div class="example-cards">
+                            <div class="ex-card reveal">
+                                <div class="ex-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 6L6 16l10 10 10-10L16 6z" stroke="#fff" stroke-width="2"/><path d="M10 16h12M16 10v12" stroke="#fff" stroke-width="1.5"/></svg></div>
+                                <div class="ex-name">AWS EC2</div>
+                                <div class="ex-desc"><strong>Largest ecosystem.</strong> Thousands of instance types, custom AMIs, deep integration with AWS services. Used by startups and enterprises worldwide.</div>
+                            </div>
+                            <div class="ex-card reveal">
+                                <div class="ex-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="9" stroke="#fff" stroke-width="2"/><path d="M16 7v18M7 16h18" stroke="#fff" stroke-width="1" opacity="0.5"/></svg></div>
+                                <div class="ex-name">Google Compute Engine</div>
+                                <div class="ex-desc"><strong>Best networking & data handling.</strong> Per-second billing, advanced networking, world-class data analytics integration.</div>
+                            </div>
+                            <div class="ex-card reveal">
+                                <div class="ex-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="7" y="10" width="18" height="12" rx="2" stroke="#fff" stroke-width="2"/><line x1="7" y1="16" x2="25" y2="16" stroke="#fff" stroke-width="1.5"/><circle cx="11" cy="13" r="1" fill="#fff"/><circle cx="11" cy="19" r="1" fill="#fff"/></svg></div>
+                                <div class="ex-name">Azure VMs</div>
+                                <div class="ex-desc"><strong>Enterprise Windows integration.</strong> Native Active Directory, hybrid cloud setup, Office 365 integration. Dominant in large enterprises.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">08 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 9: IaaS USE CASE ===== -->
+            <section class="slide" id="slide-9">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 2 · Aggu</div>
+                        <div class="eyebrow reveal">When to Use IaaS</div>
+                        <h2 class="headline reveal" style="margin-bottom:40px;">
+                            Full infrastructure <span class="accent-word">control</span><br>without owning hardware.
+                        </h2>
+                        <div class="use-case-layout">
+                            <div class="use-case-points">
+                                <div class="use-point reveal"><span class="point-num">01</span><p class="point-text"><strong>Startups</strong> — spin up infra without buying servers</p></div>
+                                <div class="use-point reveal"><span class="point-num">02</span><p class="point-text"><strong>Enterprise migration</strong> — lift-and-shift on-prem workloads</p></div>
+                                <div class="use-point reveal"><span class="point-num">03</span><p class="point-text"><strong>Dev/Test</strong> — create and destroy environments on demand</p></div>
+                                <div class="use-point reveal"><span class="point-num">04</span><p class="point-text"><strong>Compliance</strong> — fine-grained OS & network control</p></div>
+                            </div>
+                            <div class="use-case-visual reveal">
+                                <div class="use-case-illustration">
+                                    <svg width="220" height="220" viewBox="0 0 220 220" fill="none">
+                                        <rect x="50" y="30" width="120" height="150" rx="10" stroke="var(--accent)" stroke-width="1.5" fill="rgba(196,107,77,0.04)"/>
+                                        <line x1="50" y1="65" x2="170" y2="65" stroke="var(--border-light)" stroke-width="1"/>
+                                        <line x1="50" y1="100" x2="170" y2="100" stroke="var(--border-light)" stroke-width="1"/>
+                                        <line x1="50" y1="135" x2="170" y2="135" stroke="var(--border-light)" stroke-width="1"/>
+                                        <circle cx="68" cy="48" r="5" fill="var(--accent)" opacity="0.6"/>
+                                        <circle cx="68" cy="83" r="5" fill="var(--accent)" opacity="0.4"/>
+                                        <circle cx="68" cy="118" r="5" fill="var(--accent)" opacity="0.5"/>
+                                        <circle cx="68" cy="153" r="5" fill="var(--accent)" opacity="0.3"/>
+                                        <rect x="82" y="44" width="60" height="8" rx="4" fill="var(--accent)" opacity="0.15"/>
+                                        <rect x="82" y="79" width="50" height="8" rx="4" fill="var(--accent)" opacity="0.1"/>
+                                        <rect x="82" y="114" width="55" height="8" rx="4" fill="var(--accent)" opacity="0.12"/>
+                                        <rect x="82" y="149" width="40" height="8" rx="4" fill="var(--accent)" opacity="0.08"/>
+                                        <text x="110" y="205" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="11">SERVER RACK</text>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">09 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 10: PaaS DEFINITION ===== -->
+            <section class="slide" id="slide-10">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 3 · Aksanpally</div>
+                        <div class="eyebrow reveal">Platform as a Service</div>
+                        <h2 class="headline large reveal">
+                            <span class="accent-word">PaaS.</span>
+                        </h2>
+                        <div class="def-block reveal mt-md" style="max-width:1300px;">
+                            <p>A complete <strong>development and deployment platform</strong> in the cloud. Provider handles infrastructure, OS, and runtime — you focus purely on <strong>writing and deploying code</strong>.</p>
+                        </div>
+                        <div class="numbered-cards mt-lg">
+                            <div class="num-card reveal">
+                                <div class="num">01</div>
+                                <div class="card-title">Push code, auto-deploy</div>
+                                <div class="card-desc">Git push triggers build, test, and deployment — zero server setup.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">02</div>
+                                <div class="card-title">Built-in dev tools</div>
+                                <div class="card-desc">Databases, caching, monitoring, and CI/CD come out of the box.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">03</div>
+                                <div class="card-title">Auto-scaling included</div>
+                                <div class="card-desc">Traffic spike? The platform scales your instances automatically.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">10 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 11: PaaS — WHO MANAGES WHAT ===== -->
+            <section class="slide" id="slide-11">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 3 · Aksanpally</div>
+                        <div class="eyebrow reveal">PaaS Responsibilities</div>
+                        <h2 class="headline reveal" style="font-size:44px; margin-bottom:28px;">
+                            Provider does <span class="accent-word">most</span> of the work.
+                        </h2>
+                        <div class="resp-split">
+                            <div class="resp-col">
+                                <div class="resp-col-header provider reveal">Provider Manages</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg></div>Servers & Storage</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>Networking</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div>Operating System</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>Runtime & Middleware</div>
+                                <div class="resp-row provider reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>Dev Tools & DB Services</div>
+                            </div>
+                            <div class="resp-col">
+                                <div class="resp-col-header customer reveal">You Manage</div>
+                                <div class="resp-row customer reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg></div>Your Applications</div>
+                                <div class="resp-row customer reveal"><div class="row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>Your Data</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">11 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 12: PaaS EXAMPLES ===== -->
+            <section class="slide" id="slide-12">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 3 · Aksanpally</div>
+                        <div class="eyebrow reveal">Real-World PaaS</div>
+                        <h2 class="headline reveal" style="margin-bottom:24px;">
+                            Platforms that let you <span class="accent-word">just code.</span>
+                        </h2>
+                        <p class="body-text reveal" style="font-size:18px; margin-bottom:32px; max-width:950px; line-height:1.7;">
+                            PaaS removes infrastructure management entirely. You push code, and the platform handles servers, databases, scaling, and deployment. <strong>Google App Engine</strong> is serverless-first and multilingual. <strong>Heroku</strong> is the simplest entry point for startups—famous for `git push heroku main`. <strong>Azure App Service</strong> integrates with Microsoft tools and is strong in enterprise environments. Choose based on your tech stack and deployment workflow.
+                        </p>
+                        <div class="example-cards">
+                            <div class="ex-card reveal">
+                                <div class="ex-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 7L9 22h14L16 7z" stroke="#fff" stroke-width="2" fill="none"/><circle cx="16" cy="18" r="2.5" fill="#fff"/></svg></div>
+                                <div class="ex-name">Google App Engine</div>
+                                <div class="ex-desc"><strong>Serverless deployment.</strong> Deploy Python, Java, Go, Node.js, or Ruby. Auto-scales from zero to thousands of requests. Pay per CPU-millisecond.</div>
+                            </div>
+                            <div class="ex-card reveal">
+                                <div class="ex-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M8 16c0-5 3.6-9 8-9s8 4 8 9" stroke="#fff" stroke-width="2" fill="none"/><path d="M8 16c0 5 3.6 9 8 9s8-4 8-9" stroke="#fff" stroke-width="2" fill="none" stroke-dasharray="3 3"/></svg></div>
+                                <div class="ex-name">Heroku</div>
+                                <div class="ex-desc"><strong>Git-first deployment.</strong> `git push heroku main` deploys instantly. Managed Postgres, Redis, add-ons ecosystem. Favorite for startup MVPs and side projects.</div>
+                            </div>
+                            <div class="ex-card reveal">
+                                <div class="ex-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="9" y="9" width="14" height="14" rx="3" stroke="#fff" stroke-width="2" fill="none"/><path d="M14 16h4M16 14v4" stroke="#fff" stroke-width="1.5"/></svg></div>
+                                <div class="ex-name">Azure App Service</div>
+                                <div class="ex-desc"><strong>Enterprise-grade platform.</strong> Built-in CI/CD, integrated with Azure DevOps and Microsoft 365. Windows and Linux support, auto-scaling, staging slots.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">12 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 13: PaaS USE CASE ===== -->
+            <section class="slide" id="slide-13">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 3 · Aksanpally</div>
+                        <div class="eyebrow reveal">When to Use PaaS</div>
+                        <h2 class="headline reveal" style="margin-bottom:40px;">
+                            Developers deploying apps<br>without <span class="accent-word">managing</span> servers.
+                        </h2>
+                        <div class="use-case-layout">
+                            <div class="use-case-points">
+                                <div class="use-point reveal"><span class="point-num">01</span><p class="point-text"><strong>Rapid prototyping</strong> — idea to deployed app in hours</p></div>
+                                <div class="use-point reveal"><span class="point-num">02</span><p class="point-text"><strong>Small dev teams</strong> — no dedicated ops or sysadmin staff needed</p></div>
+                                <div class="use-point reveal"><span class="point-num">03</span><p class="point-text"><strong>API-first backends</strong> — microservices that auto-scale with demand</p></div>
+                                <div class="use-point reveal"><span class="point-num">04</span><p class="point-text"><strong>CI/CD workflows</strong> — git push → build → test → deploy</p></div>
+                            </div>
+                            <div class="use-case-visual reveal">
+                                <div class="use-case-illustration">
+                                    <svg width="220" height="220" viewBox="0 0 220 220" fill="none">
+                                        <rect x="35" y="35" width="150" height="110" rx="10" stroke="var(--accent)" stroke-width="1.5" fill="rgba(196,107,77,0.04)"/>
+                                        <line x1="35" y1="60" x2="185" y2="60" stroke="var(--border-light)" stroke-width="1"/>
+                                        <circle cx="50" cy="47" r="4" fill="#C46B4D" opacity="0.4"/>
+                                        <circle cx="62" cy="47" r="4" fill="#C46B4D" opacity="0.3"/>
+                                        <circle cx="74" cy="47" r="4" fill="#C46B4D" opacity="0.2"/>
+                                        <rect x="50" y="72" width="80" height="6" rx="3" fill="var(--accent)" opacity="0.15"/>
+                                        <rect x="50" y="86" width="100" height="6" rx="3" fill="var(--accent)" opacity="0.1"/>
+                                        <rect x="50" y="100" width="60" height="6" rx="3" fill="var(--accent)" opacity="0.12"/>
+                                        <rect x="50" y="114" width="90" height="6" rx="3" fill="var(--accent)" opacity="0.08"/>
+                                        <path d="M110 160 L110 185" stroke="var(--accent)" stroke-width="1.5" opacity="0.4"/>
+                                        <polygon points="104,183 110,195 116,183" fill="var(--accent)" opacity="0.4"/>
+                                        <text x="110" y="212" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="11">DEPLOY</text>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">13 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 14: SaaS DEFINITION ===== -->
+            <section class="slide" id="slide-14">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 4 · Akshay</div>
+                        <div class="eyebrow reveal">Software as a Service</div>
+                        <h2 class="headline large reveal">
+                            <span class="accent-word">SaaS.</span>
+                        </h2>
+                        <div class="def-block reveal mt-md" style="max-width:1300px;">
+                            <p>The provider manages <strong>everything</strong> — infrastructure, platform, and the application itself. You simply <strong>open a browser and use it</strong>.</p>
+                        </div>
+                        <div class="numbered-cards mt-lg">
+                            <div class="num-card reveal">
+                                <div class="num">01</div>
+                                <div class="card-title">Access from any device</div>
+                                <div class="card-desc">Browser-based. Works on laptops, tablets, phones — no install.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">02</div>
+                                <div class="card-title">Always up to date</div>
+                                <div class="card-desc">Provider pushes updates. You never patch or upgrade manually.</div>
+                            </div>
+                            <div class="num-card reveal">
+                                <div class="num">03</div>
+                                <div class="card-title">Subscription pricing</div>
+                                <div class="card-desc">Monthly or annual plans. No license keys, no upfront cost.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">14 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 15: SaaS EXAMPLES ===== -->
+            <section class="slide" id="slide-15">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 4 · Akshay</div>
+                        <div class="eyebrow reveal">SaaS You Already Use</div>
+                        <h2 class="headline reveal" style="margin-bottom:24px;">
+                            Software you <span class="accent-word">never</span> installed.
+                        </h2>
+                        <p class="body-text reveal" style="font-size:18px; margin-bottom:32px; max-width:950px; line-height:1.7;">
+                            SaaS is the software you use every day in the browser. <strong>You don't install anything. You don't manage a database. You don't patch it.</strong> Just open your browser, log in, and start working. Updates happen seamlessly in the background. It's the easiest cloud model to adopt because there's zero infrastructure knowledge required.
+                        </p>
+                        <div class="example-cards four-col">
+                            <div class="ex-card reveal" style="padding:32px 24px;">
+                                <div class="ex-icon" style="width:56px; height:56px; border-radius:14px;"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="6" width="20" height="15" rx="3" stroke="#fff" stroke-width="1.5"/><polyline points="4,6 14,15 24,6" stroke="#fff" stroke-width="1.5" fill="none"/></svg></div>
+                                <div class="ex-name" style="font-size:20px; font-weight:800;">Gmail</div>
+                                <div class="ex-desc" style="font-size:15px;"><strong>Email, calendar, mobile.</strong> 1.8 billion users worldwide. Zero setup — just log in.</div>
+                            </div>
+                            <div class="ex-card reveal" style="padding:32px 24px;">
+                                <div class="ex-icon" style="width:56px; height:56px; border-radius:14px;"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="6" y="4" width="16" height="20" rx="3" stroke="#fff" stroke-width="1.5"/><line x1="10" y1="10" x2="18" y2="10" stroke="#fff" stroke-width="1"/><line x1="10" y1="14" x2="18" y2="14" stroke="#fff" stroke-width="1"/><line x1="10" y1="18" x2="15" y2="18" stroke="#fff" stroke-width="1"/></svg></div>
+                                <div class="ex-name" style="font-size:20px; font-weight:800;">Google Workspace</div>
+                                <div class="ex-desc" style="font-size:15px;"><strong>Docs, Sheets, Slides, Drive.</strong> Collaborate in real-time with anyone, anywhere.</div>
+                            </div>
+                            <div class="ex-card reveal" style="padding:32px 24px;">
+                                <div class="ex-icon" style="width:56px; height:56px; border-radius:14px;"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 5C8.5 5 4 9.2 4 14.5c0 2.5 1 4.7 2.7 6.3L14 24l7.3-3.2c1.7-1.6 2.7-3.8 2.7-6.3C24 9.2 19.5 5 14 5z" stroke="#fff" stroke-width="1.5" fill="none"/></svg></div>
+                                <div class="ex-name" style="font-size:20px; font-weight:800;">Salesforce</div>
+                                <div class="ex-desc" style="font-size:15px;"><strong>CRM platform.</strong> Manages billions in customer relationships globally. The original SaaS pioneer.</div>
+                            </div>
+                            <div class="ex-card reveal" style="padding:32px 24px;">
+                                <div class="ex-icon" style="width:56px; height:56px; border-radius:14px;"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="5" y="7" width="18" height="12" rx="2" stroke="#fff" stroke-width="1.5"/><circle cx="14" cy="13" r="3" stroke="#fff" stroke-width="1.5" fill="none"/><line x1="5" y1="22" x2="23" y2="22" stroke="#fff" stroke-width="1.5"/></svg></div>
+                                <div class="ex-name" style="font-size:20px; font-weight:800;">Zoom</div>
+                                <div class="ex-desc" style="font-size:15px;"><strong>Video conferencing.</strong> Join meetings from a browser link. No client required.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">15 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 16: BENTO COMPARISON ===== -->
+            <section class="slide" id="slide-16">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 4 · Akshay</div>
+                        <div class="eyebrow reveal">Side by Side</div>
+                        <h2 class="headline reveal" style="font-size:44px; margin-bottom:20px;">
+                            IaaS vs PaaS vs <span class="accent-word">SaaS.</span>
+                        </h2>
+                        <p class="body-text reveal" style="font-size:17px; margin-bottom:28px; max-width:950px; line-height:1.7;">
+                            <strong>This table is your cheat sheet.</strong> Pick a row and move across to see how each model differs. Notice the pattern: as you move right (IaaS → PaaS → SaaS), the provider takes on more work, you have less control, and your team can focus on what matters — building your product, not managing infrastructure.
+                        </p>
+                        <div class="bento reveal">
+                            <div style="border-radius:8px;"></div>
+                            <div class="bento-head">IaaS</div>
+                            <div class="bento-head">PaaS</div>
+                            <div class="bento-head">SaaS</div>
+
+                            <div class="bento-label">Control</div>
+                            <div class="bento-cell strong">High — full OS access</div>
+                            <div class="bento-cell">Medium — app-level only</div>
+                            <div class="bento-cell">Low — config & settings</div>
+
+                            <div class="bento-label">Flexibility</div>
+                            <div class="bento-cell strong">Maximum — custom stack</div>
+                            <div class="bento-cell">Moderate — framework-bound</div>
+                            <div class="bento-cell">Limited — use as-is</div>
+
+                            <div class="bento-label">Mgmt Load</div>
+                            <div class="bento-cell">Heavy — patch, secure, scale</div>
+                            <div class="bento-cell">Light — code & deploy</div>
+                            <div class="bento-cell strong">None — just log in</div>
+
+                            <div class="bento-label">Target</div>
+                            <div class="bento-cell">IT Admins / DevOps</div>
+                            <div class="bento-cell">Developers</div>
+                            <div class="bento-cell">End Users / Business</div>
+
+                            <div class="bento-label">Examples</div>
+                            <div class="bento-cell" style="font-size:15px;">AWS EC2, Azure VMs, GCE</div>
+                            <div class="bento-cell" style="font-size:15px;">Heroku, App Engine, Azure App Svc</div>
+                            <div class="bento-cell" style="font-size:15px;">Gmail, Salesforce, Zoom</div>
+                        </div>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">16 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 17: RESPONSIBILITY MATRIX ===== -->
+            <section class="slide" id="slide-17">
+                <div class="slide-frame">
+                    <div class="slide-inner">
+                        <div class="presenter-tag"><span class="tag-dot"></span> Sec 4 · Akshay</div>
+                        <div class="eyebrow reveal">Shared Responsibility</div>
+                        <h2 class="headline reveal" style="font-size:44px; margin-bottom:6px;">
+                            The <span class="accent-word">responsibility</span> matrix.
+                        </h2>
+                        <p class="body-text reveal" style="font-size:16px; color:var(--text-muted); margin-bottom:20px;">What fraction of the 9-layer stack does each party manage?</p>
+
+                        <div class="matrix-area">
+                            <!-- On-Prem -->
+                            <div class="matrix-row reveal">
+                                <div class="matrix-label">On-Prem</div>
+                                <div class="matrix-bar-wrap">
+                                    <div class="matrix-seg customer-seg" style="width:100%;"><div class="seg-inner"><span class="seg-pct">9/9</span><span class="seg-who">You manage</span></div></div>
+                                </div>
+                            </div>
+                            <!-- IaaS: Provider 4/9 ≈ 44%, Customer 5/9 ≈ 56% -->
+                            <div class="matrix-row reveal">
+                                <div class="matrix-label">IaaS</div>
+                                <div class="matrix-bar-wrap">
+                                    <div class="matrix-seg provider-seg" data-target="44" style="width:0%;"><div class="seg-inner"><span class="seg-pct">4/9</span><span class="seg-who">Provider</span></div></div>
+                                    <div class="matrix-seg customer-seg" data-target="56" style="width:0%;"><div class="seg-inner"><span class="seg-pct">5/9</span><span class="seg-who">Customer</span></div></div>
+                                </div>
+                            </div>
+                            <!-- PaaS: Provider 7/9 ≈ 78%, Customer 2/9 ≈ 22% -->
+                            <div class="matrix-row reveal">
+                                <div class="matrix-label">PaaS</div>
+                                <div class="matrix-bar-wrap">
+                                    <div class="matrix-seg provider-seg" data-target="78" style="width:0%;"><div class="seg-inner"><span class="seg-pct">7/9</span><span class="seg-who">Provider</span></div></div>
+                                    <div class="matrix-seg customer-seg" data-target="22" style="width:0%;"><div class="seg-inner"><span class="seg-pct">2/9</span><span class="seg-who">Customer</span></div></div>
+                                </div>
+                            </div>
+                            <!-- SaaS: Provider 9/9 = 100% -->
+                            <div class="matrix-row reveal">
+                                <div class="matrix-label">SaaS</div>
+                                <div class="matrix-bar-wrap">
+                                    <div class="matrix-seg provider-seg" data-target="100" style="width:0%;"><div class="seg-inner"><span class="seg-pct">9/9</span><span class="seg-who">Provider</span></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="matrix-legend reveal">
+                            <div class="matrix-legend-item"><div class="matrix-legend-swatch" style="background:var(--accent);"></div> Provider-managed layers</div>
+                            <div class="matrix-legend-item"><div class="matrix-legend-swatch" style="background:var(--border-frame);"></div> Customer-managed layers</div>
+                        </div>
+                        <p class="matrix-footnote reveal">Based on the 9-layer cloud stack: Network → Storage → Servers → Virtualization → OS → Middleware → Runtime → Applications → Data</p>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">17 / 18</div>
+                </div>
+            </section>
+
+            <!-- ===== SLIDE 18: THANK YOU ===== -->
+            <section class="slide" id="slide-18">
+                <div class="slide-frame">
+                    <div class="slide-inner centered">
+                        <h1 class="headline large reveal" style="font-size:120px;">
+                            Thank <span class="accent-word">you.</span>
+                        </h1>
+                        <div style="width:100px; height:2px; background:var(--accent-underline); border-radius:2px; margin:28px auto;" class="reveal"></div>
+                        <p class="subtitle reveal" style="text-align:center;">Cloud Service Models · CSE-F · MRDU</p>
+                    </div>
+                    <div class="metadata-bar">Team CSE-F <span class="dot"></span> MRDU <span class="dot"></span> 2026</div>
+                    <div class="slide-counter">18 / 18</div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Side nav dots -->
+    <nav class="side-nav" id="sideNav" aria-label="Slide navigation"></nav>
+
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- Inline editing -->
+    <div class="edit-hotzone"></div>
+    <button class="edit-toggle" id="editToggle" title="Edit mode (E)">✏️</button>
+
+    <script>
+        /* ===========================================
+           SLIDE CONTROLLER
+           =========================================== */
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.progressBar = document.getElementById('progressBar');
+                this.sideNav = document.getElementById('sideNav');
+
+                this.buildSideNav();
+                this.setupStageScale();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupWheelNav();
+                this.showSlide(0);
+            }
+
+            buildSideNav() {
+                this.slides.forEach((_, i) => {
+                    const dot = document.createElement('button');
+                    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+                    dot.setAttribute('aria-label', `Slide ${i + 1}`);
+                    dot.addEventListener('click', () => this.showSlide(i));
+                    this.sideNav.appendChild(dot);
+                });
+                this.navDots = this.sideNav.querySelectorAll('.nav-dot');
+            }
+
+            setupStageScale() {
+                const scale = () => {
+                    const f = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+                    const x = (window.innerWidth - 1920 * f) / 2;
+                    const y = (window.innerHeight - 1080 * f) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${f})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+                    switch(e.key) {
+                        case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
+                            e.preventDefault(); this.next(); break;
+                        case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
+                            e.preventDefault(); this.prev(); break;
+                        case 'Home': e.preventDefault(); this.showSlide(0); break;
+                        case 'End': e.preventDefault(); this.showSlide(this.slides.length - 1); break;
+                    }
+                });
+            }
+
+            setupTouchNav() {
+                let sx = 0;
+                this.stage.addEventListener('touchstart', e => { sx = e.changedTouches[0].screenX; }, { passive: true });
+                this.stage.addEventListener('touchend', e => {
+                    const dx = e.changedTouches[0].screenX - sx;
+                    if (Math.abs(dx) > 50) dx < 0 ? this.next() : this.prev();
+                }, { passive: true });
+            }
+
+            setupWheelNav() {
+                let wt;
+                document.addEventListener('wheel', e => {
+                    e.preventDefault();
+                    if (wt) return;
+                    wt = setTimeout(() => { wt = null; }, 600);
+                    e.deltaY > 0 ? this.next() : this.prev();
+                }, { passive: false });
+            }
+
+            next() { if (this.currentSlide < this.slides.length - 1) this.showSlide(this.currentSlide + 1); }
+            prev() { if (this.currentSlide > 0) this.showSlide(this.currentSlide - 1); }
+
+            showSlide(i) {
+                const prevIndex = this.currentSlide;
+                this.currentSlide = Math.max(0, Math.min(i, this.slides.length - 1));
+                if (prevIndex === this.currentSlide) return;
+
+                const prevEl = this.slides[prevIndex];
+                const nextEl = this.slides[this.currentSlide];
+
+                // Clean up any stale leaving classes to prevent memory leaks during fast skipping
+                this.slides.forEach(s => {
+                    if (s !== nextEl && s !== prevEl) {
+                        s.classList.remove('leaving', 'active', 'visible');
+                    }
+                });
+
+                // Outgoing slide: snap to opacity 1, scale down
+                prevEl.classList.remove('active', 'visible');
+                prevEl.classList.add('leaving');
+
+                // Incoming slide: fade + scale in
+                nextEl.classList.add('active', 'visible');
+
+                clearTimeout(this._leaveTimeout);
+                this._leaveTimeout = setTimeout(() => {
+                    prevEl.classList.remove('leaving');
+                }, 780);
+
+                this.navDots.forEach((d, j) => d.classList.toggle('active', j === this.currentSlide));
+                this.progressBar.style.width = ((this.currentSlide + 1) / this.slides.length * 100) + '%';
+                if (this.currentSlide === 16) this.animateMatrix();
+            }
+
+            animateMatrix() {
+                const s = document.getElementById('slide-17');
+                if (!s) return;
+                s.querySelectorAll('.matrix-seg[data-target]').forEach((seg, i) => {
+                    seg.style.width = '0%';
+                    setTimeout(() => { seg.style.width = seg.dataset.target + '%'; }, 400 + i * 150);
+                });
+            }
+        }
+
+        /* Inline Editor */
+        class InlineEditor {
+            constructor() { this.isActive = false; this.toggle = document.getElementById('editToggle'); }
+            toggleEditMode() {
+                this.isActive = !this.isActive;
+                this.toggle.classList.toggle('active', this.isActive);
+                document.querySelectorAll('.headline, .subtitle, .body-text, .card-title, .card-desc, .ex-name, .ex-desc, .def-block p, .bento-cell, .point-text, .contrast-table td').forEach(el => {
+                    el.contentEditable = this.isActive;
+                    el.style.outline = this.isActive ? '1px dashed rgba(196,107,77,0.25)' : 'none';
+                    el.style.cursor = this.isActive ? 'text' : '';
+                });
+                this.toggle.textContent = this.isActive ? '💾' : '✏️';
+            }
+        }
+
+        const presentation = new SlidePresentation();
+        const editor = new InlineEditor();
+
+        /* Edit hotzone */
+        const hotzone = document.querySelector('.edit-hotzone');
+        const editToggle = document.getElementById('editToggle');
+        let hideTO = null;
+        hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTO); editToggle.classList.add('show'); });
+        hotzone.addEventListener('mouseleave', () => { hideTO = setTimeout(() => { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
+        editToggle.addEventListener('mouseenter', () => clearTimeout(hideTO));
+        editToggle.addEventListener('mouseleave', () => { hideTO = setTimeout(() => { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
+        hotzone.addEventListener('click', () => editor.toggleEditMode());
+        editToggle.addEventListener('click', () => editor.toggleEditMode());
+        document.addEventListener('keydown', e => { if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) editor.toggleEditMode(); });
+    </script>
+</body>
+</html>
